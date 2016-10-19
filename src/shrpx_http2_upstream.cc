@@ -1604,7 +1604,7 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
       (downstream->get_non_final_response() || resp.http_status == 200) &&
       (req.method == HTTP_GET || req.method == HTTP_POST)) {
 
-    std::string current_path = downstream->request().path.toString();
+    std::string current_path = downstream->request().path.str();
 
     // Decide to cancel pending push requests or not
     std::cout << "on_downstream_header_complete.request path " << current_path << std::endl;
