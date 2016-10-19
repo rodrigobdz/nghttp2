@@ -1958,10 +1958,6 @@ int Http2Upstream::prepare_push_promise(Downstream *downstream) {
       if (rv != 0) {
         return -1;
       }
-
-      // Store promised stream id into vector
-      // if submitting push promise succeeded
-      promised_stream_ids_.push_back(promised_stream_id);
     }
   }
   return 0;
@@ -2015,6 +2011,10 @@ int Http2Upstream::submit_push_promise(const StringRef &scheme,
     }
     return 0;
   }
+
+  // Store promised stream id into vector
+  // if submitting push promise succeeded
+  promised_stream_ids_.push_back(promised_stream_id);
 
   if (LOG_ENABLED(INFO)) {
     std::stringstream ss;
