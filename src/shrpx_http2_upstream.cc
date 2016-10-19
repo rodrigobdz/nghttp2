@@ -602,17 +602,16 @@ int on_frame_send_callback(nghttp2_session *session, const nghttp2_frame *frame,
     }
 
     if(frame->hd.type == NGHTTP2_DATA) {
-      std::cout << " .shrpx_http2_upstream.on_frame_send_callback.stream_id " << stream_id << std::endl;
-      std::cout << "BEFORE on_frame_send_callback.Size promised_stream_ids_ : " << upstream->promised_stream_ids_.size() << std::endl;
-
+      // Compare stream ids with promised stream ids to determine
+      // if content is being pushed
       for (int i=0; i < upstream->promised_stream_ids_.size(); i++) {
         if(upstream->promised_stream_ids_[i] == stream_id) {
+          std::cout << "on_frame_send_callback removing from promised_stream_ids_ stream_id: " << stream_id << std::endl;
           // Remove promised stream id from queue when it has been sent to the client
           upstream->promised_stream_ids_.erase(std::remove(upstream->promised_stream_ids_.begin(), upstream->promised_stream_ids_.end(), stream_id), upstream->promised_stream_ids_.end());
+          std::cout << "on_frame_send_callback size after removing stream_id: " << upstream->promised_stream_ids_.size() << std::endl;
         }
       }
-
-      std::cout << "AFTER on_frame_send_callback.Size promised_stream_ids_ : " << upstream->promised_stream_ids_.size() << std::endl;
     }
 
     // For tunneling, issue RST_STREAM to finish the stream.
@@ -1605,6 +1604,19 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
       (downstream->get_non_final_response() || resp.http_status == 200) &&
       (req.method == HTTP_GET || req.method == HTTP_POST)) {
 
+    // Decide to cancel pending push requests or not
+    std::cout << "on_downstream_header_complete.request path " << downstream->request().path << std::endl;
+    if(downstream->request().path == "/test.html") {
+      // Cancel all pending push promises from previous requests
+      std::cout << "on_downstream_header_complete.cancelling pending push promises" << std::endl;
+      for (int i=0; i<promised_stream_ids_.size();i++) {
+        // RST_STREAM pending push promise
+        nghttp2_submit_rst_stream(session_, NGHTTP2_FLAG_NONE, promised_stream_ids_[i], NGHTTP2_CANCEL);
+        // Remove promised stream id from queue after it was cancelled
+        promised_stream_ids_.erase(std::remove(promised_stream_ids_.begin(), promised_stream_ids_.end(), promised_stream_ids_[i]), promised_stream_ids_.end());
+      }
+    }
+
     if (prepare_push_promise(downstream) != 0) {
       // Continue to send response even if push was failed.
     }
@@ -1708,20 +1720,6 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
     data_prdptr = &data_prd;
   } else {
     data_prdptr = nullptr;
-  }
-
-  std::cout << " request PATH " << downstream->request().path << std::endl;
-  // if(downstream->request().path == "/test.html") {
-  //   for (int i=0; i<promised_stream_ids_.size();i++) {
-  //     nghttp2_submit_rst_stream(session_, NGHTTP2_FLAG_NONE, promised_stream_ids_[i], NGHTTP2_CANCEL);
-  //     std::cout << " RST_STREAMing every pending push promise " << std::endl;      
-  //   }
-  // }
-
-  std::cout << "on_downstream_header_complete.LOG. " << std::endl;
-  std::cout << "on_downstream_header_complete.Size promised_stream_ids_ : " << promised_stream_ids_.size() << std::endl;
-  for (int i=0; i<promised_stream_ids_.size();i++) {
-    std::cout << "on_downstream_header_complete.PROMISED STREAM ID " << promised_stream_ids_[i] << std::endl;
   }
 
   rv = nghttp2_submit_response(session_, downstream->get_stream_id(),
@@ -1960,6 +1958,10 @@ int Http2Upstream::prepare_push_promise(Downstream *downstream) {
       if (rv != 0) {
         return -1;
       }
+
+      // Store promised stream id into vector
+      // if submitting push promise succeeded
+      promised_stream_ids_.push_back(promised_stream_id);
     }
   }
   return 0;
