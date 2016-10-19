@@ -604,12 +604,12 @@ int on_frame_send_callback(nghttp2_session *session, const nghttp2_frame *frame,
     if(frame->hd.type == NGHTTP2_DATA) {
       // Compare stream ids with promised stream ids to determine
       // if content is being pushed
-      for (int i=0; i < upstream->promised_stream_ids_.size(); i++) {
-        if(upstream->promised_stream_ids_[i] == stream_id) {
-          std::cout << "on_frame_send_callback removing from promised_stream_ids_ stream_id: " << stream_id << std::endl;
+      for (int i=0; i < upstream->promised_stream_ids.size(); i++) {
+        if(upstream->promised_stream_ids[i] == stream_id) {
+          std::cout << "on_frame_send_callback removing from promised_stream_ids stream_id: " << stream_id << std::endl;
           // Remove promised stream id from queue when it has been sent to the client
-          upstream->promised_stream_ids_.erase(std::remove(upstream->promised_stream_ids_.begin(), upstream->promised_stream_ids_.end(), stream_id), upstream->promised_stream_ids_.end());
-          std::cout << "on_frame_send_callback size after removing stream_id: " << upstream->promised_stream_ids_.size() << std::endl;
+          upstream->promised_stream_ids.erase(std::remove(upstream->promised_stream_ids.begin(), upstream->promised_stream_ids.end(), stream_id), upstream->promised_stream_ids.end());
+          std::cout << "on_frame_send_callback size after removing stream_id: " << upstream->promised_stream_ids.size() << std::endl;
         }
       }
     }
@@ -1609,11 +1609,11 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
     if(downstream->request().path == "/test.html") {
       // Cancel all pending push promises from previous requests
       std::cout << "on_downstream_header_complete.cancelling pending push promises" << std::endl;
-      for (int i=0; i<promised_stream_ids_.size();i++) {
+      for (int i=0; i<promised_stream_ids.size();i++) {
         // RST_STREAM pending push promise
-        nghttp2_submit_rst_stream(session_, NGHTTP2_FLAG_NONE, promised_stream_ids_[i], NGHTTP2_CANCEL);
+        nghttp2_submit_rst_stream(session_, NGHTTP2_FLAG_NONE, promised_stream_ids[i], NGHTTP2_CANCEL);
         // Remove promised stream id from queue after it was cancelled
-        promised_stream_ids_.erase(std::remove(promised_stream_ids_.begin(), promised_stream_ids_.end(), promised_stream_ids_[i]), promised_stream_ids_.end());
+        promised_stream_ids.erase(std::remove(promised_stream_ids.begin(), promised_stream_ids.end(), promised_stream_ids[i]), promised_stream_ids.end());
       }
     }
 
@@ -2014,7 +2014,7 @@ int Http2Upstream::submit_push_promise(const StringRef &scheme,
 
   // Store promised stream id into vector
   // if submitting push promise succeeded
-  promised_stream_ids_.push_back(promised_stream_id);
+  promised_stream_ids.push_back(promised_stream_id);
 
   if (LOG_ENABLED(INFO)) {
     std::stringstream ss;
