@@ -1606,15 +1606,30 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
 
     // Decide to cancel pending push requests or not
     std::cout << "on_downstream_header_complete.request path " << downstream->request().path << std::endl;
-    if(downstream->request().path == "/test.html") {
-      // Cancel all pending push promises from previous requests
-      std::cout << "on_downstream_header_complete.cancelling pending push promises" << std::endl;
-      for (int i=0; i<promised_stream_ids.size();i++) {
-        // RST_STREAM pending push promise
-        nghttp2_submit_rst_stream(session_, NGHTTP2_FLAG_NONE, promised_stream_ids[i], NGHTTP2_CANCEL);
-        // Remove promised stream id from queue after it was cancelled
-        promised_stream_ids.erase(std::remove(promised_stream_ids.begin(), promised_stream_ids.end(), promised_stream_ids[i]), promised_stream_ids.end());
+
+    // Get requested representation and store the result
+    std::size_t search_result = downstream->request().path.find("/V");
+    // Only check if cancelling is needed under the condition that 
+    // a video representation is requested
+    if (search_result != std::string::npos) {
+      currently_requested_video_representation_ = downstream->request().path.substr(search_result, 1);
+      // Check if the current video representation is different 
+      // than the last one requested
+      if(currently_requested_video_representation_ != last_requested_video_representation_) {
+        // Cancel all pending push promises from previous requests
+        std::cout << "on_downstream_header_complete.cancelling pending push promises" << std::endl;
+        for (int i=0; i<promised_stream_ids.size();i++) {
+          // RST_STREAM pending push promise
+          nghttp2_submit_rst_stream(session_, NGHTTP2_FLAG_NONE, promised_stream_ids[i], NGHTTP2_CANCEL);
+          // Remove promised stream id from queue after it was cancelled
+          promised_stream_ids.erase(std::remove(promised_stream_ids.begin(), promised_stream_ids.end(), promised_stream_ids[i]), promised_stream_ids.end());
+        }
       }
+      // Update last requested representation to the currently requested one
+      last_requested_video_representation_ = downstream->request().path;
+
+      std::cout << "last_requested_video_representation_ " << last_requested_video_representation_ << std::endl;
+      std::cout << "currently_requested_video_representation_ " << currently_requested_video_representation_ << std::endl;
     }
 
     if (prepare_push_promise(downstream) != 0) {

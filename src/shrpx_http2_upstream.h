@@ -30,7 +30,7 @@
 #include <memory>
 
 #include <ev.h>
-
+#include <string>
 #include <nghttp2/nghttp2.h>
 
 #include "shrpx_upstream.h"
@@ -135,6 +135,8 @@ private:
   nghttp2_session *session_;
   size_t max_buffer_size_;
   bool flow_control_;
+  std::string last_requested_video_representation_;
+  std::string currently_requested_video_representation_;
 };
 
 nghttp2_session_callbacks *create_http2_upstream_callbacks();
