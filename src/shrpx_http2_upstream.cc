@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <cerrno>
 #include <sstream>
+#include <iostream>
 
 #include "shrpx_client_handler.h"
 #include "shrpx_https_upstream.h"
@@ -598,6 +599,20 @@ int on_frame_send_callback(nghttp2_session *session, const nghttp2_frame *frame,
 
     if (!downstream) {
       return 0;
+    }
+
+    if(frame->hd.type == NGHTTP2_DATA) {
+      std::cout << " .shrpx_http2_upstream.on_frame_send_callback.stream_id " << stream_id << std::endl;
+      std::cout << "BEFORE on_frame_send_callback.Size promised_stream_ids_ : " << upstream->promised_stream_ids_.size() << std::endl;
+
+      for (int i=0; i < upstream->promised_stream_ids_.size(); i++) {
+        if(upstream->promised_stream_ids_[i] == stream_id) {
+          // Remove promised stream id from queue when it has been sent to the client
+          upstream->promised_stream_ids_.erase(std::remove(upstream->promised_stream_ids_.begin(), upstream->promised_stream_ids_.end(), stream_id), upstream->promised_stream_ids_.end());
+        }
+      }
+
+      std::cout << "AFTER on_frame_send_callback.Size promised_stream_ids_ : " << upstream->promised_stream_ids_.size() << std::endl;
     }
 
     // For tunneling, issue RST_STREAM to finish the stream.
@@ -1693,6 +1708,20 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
     data_prdptr = &data_prd;
   } else {
     data_prdptr = nullptr;
+  }
+
+  std::cout << " request PATH " << downstream->request().path << std::endl;
+  // if(downstream->request().path == "/test.html") {
+  //   for (int i=0; i<promised_stream_ids_.size();i++) {
+  //     nghttp2_submit_rst_stream(session_, NGHTTP2_FLAG_NONE, promised_stream_ids_[i], NGHTTP2_CANCEL);
+  //     std::cout << " RST_STREAMing every pending push promise " << std::endl;      
+  //   }
+  // }
+
+  std::cout << "on_downstream_header_complete.LOG. " << std::endl;
+  std::cout << "on_downstream_header_complete.Size promised_stream_ids_ : " << promised_stream_ids_.size() << std::endl;
+  for (int i=0; i<promised_stream_ids_.size();i++) {
+    std::cout << "on_downstream_header_complete.PROMISED STREAM ID " << promised_stream_ids_[i] << std::endl;
   }
 
   rv = nghttp2_submit_response(session_, downstream->get_stream_id(),

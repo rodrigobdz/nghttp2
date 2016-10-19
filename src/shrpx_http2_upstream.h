@@ -131,6 +131,9 @@ private:
   nghttp2_session *session_;
   size_t max_buffer_size_;
   bool flow_control_;
+  // Vector to store promised stream ids
+  // It will be used to cancel unsent push content
+  std::vector<int> promised_stream_ids_;
 };
 
 nghttp2_session_callbacks *create_http2_upstream_callbacks();
