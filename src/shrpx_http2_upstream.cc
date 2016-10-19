@@ -1604,15 +1604,17 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
       (downstream->get_non_final_response() || resp.http_status == 200) &&
       (req.method == HTTP_GET || req.method == HTTP_POST)) {
 
+    std::string current_path = downstream->request().path.toString();
+
     // Decide to cancel pending push requests or not
-    std::cout << "on_downstream_header_complete.request path " << downstream->request().path << std::endl;
+    std::cout << "on_downstream_header_complete.request path " << current_path << std::endl;
 
     // Get requested representation and store the result
-    std::size_t search_result = downstream->request().path.find("/V");
+    std::size_t search_result = current_path.find("/V");
     // Only check if cancelling is needed under the condition that 
     // a video representation is requested
     if (search_result != std::string::npos) {
-      currently_requested_video_representation_ = downstream->request().path.substr(search_result, 1);
+      currently_requested_video_representation_ = current_path.substr(search_result, 1);
       // Check if the current video representation is different 
       // than the last one requested
       if(currently_requested_video_representation_ != last_requested_video_representation_) {
@@ -1626,7 +1628,7 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
         }
       }
       // Update last requested representation to the currently requested one
-      last_requested_video_representation_ = downstream->request().path;
+      last_requested_video_representation_ = currently_requested_video_representation_;
 
       std::cout << "last_requested_video_representation_ " << last_requested_video_representation_ << std::endl;
       std::cout << "currently_requested_video_representation_ " << currently_requested_video_representation_ << std::endl;
