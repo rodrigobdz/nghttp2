@@ -1628,11 +1628,13 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
           promised_stream_ids.erase(std::remove(promised_stream_ids.begin(), promised_stream_ids.end(), promised_stream_ids[i]), promised_stream_ids.end());
         }
       }
+      
+      std::cout << "last_requested_video_representation_ " << last_requested_video_representation_ << std::endl;
+      std::cout << "currently_requested_video_representation_ " << currently_requested_video_representation_ << std::endl;
+
       // Update last requested representation to the currently requested one
       last_requested_video_representation_ = currently_requested_video_representation_;
 
-      std::cout << "last_requested_video_representation_ " << last_requested_video_representation_ << std::endl;
-      std::cout << "currently_requested_video_representation_ " << currently_requested_video_representation_ << std::endl;
     }
 
     if (prepare_push_promise(downstream) != 0) {
