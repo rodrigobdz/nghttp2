@@ -1614,7 +1614,8 @@ int Http2Upstream::on_downstream_header_complete(Downstream *downstream) {
     // Only check if cancelling is needed under the condition that 
     // a video representation is requested
     if (search_result != std::string::npos) {
-      currently_requested_video_representation_ = current_path.substr(search_result, 1);
+      // Get video representation number from path
+      currently_requested_video_representation_ = current_path.substr(search_result, 3);
       // Check if the current video representation is different 
       // than the last one requested
       if(currently_requested_video_representation_ != last_requested_video_representation_) {
