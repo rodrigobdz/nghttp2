@@ -1151,23 +1151,24 @@ int verify_hostname(X509 *cert, const StringRef &hostname,
 } // namespace
 
 int check_cert(SSL *ssl, const Address *addr, const StringRef &host) {
-  auto cert = SSL_get_peer_certificate(ssl);
-  if (!cert) {
-    LOG(ERROR) << "No certificate found";
-    return -1;
-  }
-  auto cert_deleter = defer(X509_free, cert);
-  auto verify_res = SSL_get_verify_result(ssl);
-  if (verify_res != X509_V_OK) {
-    LOG(ERROR) << "Certificate verification failed: "
-               << X509_verify_cert_error_string(verify_res);
-    return -1;
-  }
+  // auto cert = SSL_get_peer_certificate(ssl);
+  // if (!cert) {
+  //   LOG(ERROR) << "No certificate found";
+  //   return -1;
+  // }
+  // auto cert_deleter = defer(X509_free, cert);
+  // auto verify_res = SSL_get_verify_result(ssl);
+  // if (verify_res != X509_V_OK) {
+  //   LOG(ERROR) << "Certificate verification failed: "
+  //              << X509_verify_cert_error_string(verify_res);
+  //   return -1;
+  // }
 
-  if (verify_hostname(cert, host, addr) != 0) {
-    LOG(ERROR) << "Certificate verification failed: hostname does not match";
-    return -1;
-  }
+  // if (verify_hostname(cert, host, addr) != 0) {
+  //   LOG(ERROR) << "Certificate verification failed: hostname does not match";
+  //   return -1;
+  // }
+  LOG(WARN) << "Ignoring peer certificate validation";
   return 0;
 }
 
